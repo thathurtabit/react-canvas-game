@@ -1,7 +1,6 @@
 import React, { Component } from 'react';
 import styled from 'styled-components';
 import { CSSTransition } from 'react-transition-group';
-import update from 'immutability-helper';
 import siteData from '../../api/siteData';
 import introPageData from '../../api/introPageData';
 import Game from '../../components/organisms/Game';

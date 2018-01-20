@@ -1,5 +1,4 @@
 import React, { Component } from 'react';
-import update from 'immutability-helper';
 
 const KEY = {
   LEFT:  37,
@@ -10,7 +9,6 @@ const KEY = {
   D: 68,
   W: 87,
   S: 83,
-  SPACE: 32
 };
 
 
@@ -33,13 +31,11 @@ const initialState = {
   },
   centerPos: (window.innerWidth / 2) / 2,
   context: null,
-  keys : {
-    left  : 0,
-    right : 0,
-    up    : 0,
-    down  : 0,
-    space : 0,
-  },
+  direction: '',
+  animation: {
+    stop: false,
+    fps: 3,
+  }
 };
 
   
@@ -84,18 +80,16 @@ export default class Game extends Component {
 
   componentDidMount() {
     // Add 'resize' listener to window
-    window.addEventListener('keyup',   this.handleKeys.bind(this, false));
     window.addEventListener('keydown', this.handleKeys.bind(this, true));
     window.addEventListener('resize', this.debounce((e) => { this.resizeCanvas(); }, 300));
     this.getCanvas();
 
-    // Request next frame
-    requestAnimationFrame(() => {this.update()});
+    // Animation (requestAnimationFrame throttled)
+    this.startAnimating(this.state.animation.fps);
   }
 
   // Tidy up after yourself
   componentWillUnmount() {
-    window.removeEventListener('keyup', this.handleKeys);
     window.removeEventListener('keydown', this.handleKeys);
     window.removeEventListener('resize', this.debounce);
   }
@@ -112,18 +106,70 @@ export default class Game extends Component {
     }
   }
 
+  // Start Animating...
+  startAnimating(fps) {
+    this.setState({
+      animation: {
+        fpsInterval: 1000 / fps,
+        startTime: window.performance.now(),
+        then: window.performance.now(),
+      }
+    }, () => {
+      console.log(this.state.animation);
+      this.animate();
+    });
+  }
+
+  // Get things moving
+  animate(newTime) {
+    //const ani = this.state.animation;
+    let now;
+    let elapsed;
+    let then = this.state.animation.then;
+    let fpsInterval = this.state.animation.fpsInterval;
+
+    // if set to top stop
+    if (this.state.stop) {
+        return;
+    }
+
+    // request another frame
+
+    requestAnimationFrame(this.animate);
+
+    // calc elapsed time since last loop
+
+    now = newTime;
+    elapsed = now - then;
+
+    // if enough time has elapsed, draw the next frame
+
+    if (elapsed > fpsInterval) {
+
+      // Get ready for next frame by setting then=now, but...
+      // Also, adjust for fpsInterval not being multiple of 16.67
+      then = now - (elapsed % fpsInterval);
+
+      // draw stuff here
+      console.log('Animation is throttled');
+
+    }
+  }
+
+
   handleKeys(value, e){
-    let keys = this.state.keys;
-    if(e.keyCode === KEY.LEFT   || e.keyCode === KEY.A) keys.left  = value;
-    if(e.keyCode === KEY.RIGHT  || e.keyCode === KEY.D) keys.right = value;
-    if(e.keyCode === KEY.UP     || e.keyCode === KEY.W) keys.up    = value;
-    if(e.keyCode === KEY.DOWN   || e.keyCode === KEY.S) keys.down  = value;
-    if(e.keyCode === KEY.SPACE) keys.space = value;
+    // Assign direction info
+    let direction;
+
+    if(e.keyCode === KEY.LEFT   || e.keyCode === KEY.A) direction = "left";
+    if(e.keyCode === KEY.RIGHT  || e.keyCode === KEY.D) direction = "right";
+    if(e.keyCode === KEY.UP     || e.keyCode === KEY.W) direction = "up";
+    if(e.keyCode === KEY.DOWN   || e.keyCode === KEY.S) direction = "down";
         
     this.setState({
-      keys: keys,
+      direction: direction,
     }, () => {
-      console.log(this.state.keys);
+      console.log(direction);
     });
   }
   
@@ -146,7 +192,7 @@ export default class Game extends Component {
     }, () => {
       // After setState do stuff
       const st = this.state;
-      console.log(`resizeCanvas: ${st}`);
+      console.log(`resizeCanvas: ${st} | devicePixelRatio: ${st.screen.ratio}`);
       this.drawHero(st.hero.x, st.hero.y, st.box.width, st.box.height);
       this.drawBoxes(st.box.width, st.box.height);
 
@@ -163,7 +209,6 @@ export default class Game extends Component {
     this.drawBoxes(st.box.width, st.box.height);
    
   };
-  
   
   // Draw Hero
   drawHero(xPos, yPos, boxWidth, boxHeight) {
@@ -212,18 +257,19 @@ export default class Game extends Component {
   }
 
 
-  // Update
-  update() {
+  // Update Game
+  updateGame() {
     const context = this.state.context;
-    const keys = this.state.keys;
 
     context.save();
     context.scale(this.state.screen.ratio, this.state.screen.ratio);
 
+    //console.log('Animating...');
+
     context.restore();
 
-    // Next frame
-    requestAnimationFrame(() => {this.update()});
+    // Animation (requestAnimationFrame throttled)
+    this.startAnimating(this.state.animation.fps);
 
   }
   
@@ -232,8 +278,8 @@ export default class Game extends Component {
     return (
       <canvas
         ref={canvas => this.canvas = canvas}
-        width={this.state.screen.width * this.state.screen.ratio}
-        height={this.state.screen.height * this.state.screen.ratio}
+        width={this.state.screen.width}
+        height={this.state.screen.height}
       />
     );
   }
