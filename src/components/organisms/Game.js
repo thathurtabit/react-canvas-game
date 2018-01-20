@@ -1,6 +1,17 @@
 import React, { Component } from 'react';
-import styled from 'styled-components';
 import update from 'immutability-helper';
+
+const KEY = {
+  LEFT:  37,
+  RIGHT: 39,
+  UP: 38,
+  DOWN: 40,
+  A: 65,
+  D: 68,
+  W: 87,
+  S: 83,
+  SPACE: 32
+};
 
 
 // Set my initial state
@@ -11,31 +22,38 @@ const initialState = {
     height: window.innerHeight,
     ratio: window.devicePixelRatio || 1,
   },
-  context: null,
   gameRows: 10,
+  box: {
+    width: (window.innerWidth / 2) / 10,
+    height: (window.innerWidth / 2) / 10,
+  },
+  hero: {
+    x: (window.innerWidth / 2) / 2,
+    y: 0,
+  },
+  centerPos: (window.innerWidth / 2) / 2,
+  context: null,
+  keys : {
+    left  : 0,
+    right : 0,
+    up    : 0,
+    down  : 0,
+    space : 0,
+  },
 };
 
   
 // HELPERS
 
 // Generate random color
-const randomColor = () => { 
-  return('#'+Math.floor(Math.random()*16777215).toString(16));
-}
- 
-// Generate Random Alpha
-const randomAlpha = () => { 
-  return((Math.random() * (1 - 0.75) + 0.75));
-}
-
-// // Hero Props
-// const hero = {
-//   pos: {
-//     x: centerPos,
-//     y: offsetY,
-//   }
+// const randomColor = () => { 
+//   return('#'+Math.floor(Math.random()*16777215).toString(16));
 // }
-
+ 
+// // Generate Random Alpha
+// const randomAlpha = () => { 
+//   return((Math.random() * (1 - 0.75) + 0.75));
+// }
 
 
 // MY GAME COMPONENT
@@ -53,22 +71,33 @@ export default class Game extends Component {
     const context = this.canvas.getContext('2d');
     this.setState({
       context: context,
+    }, () => {
+      // Draw on canvas after we've got the ref to it
+      this.drawCanvas();
     });
   }
-
 
   // React Lifecycle
   componentWillMount() {
     //init
   }
 
-
   componentDidMount() {
     // Add 'resize' listener to window
-    //window.addEventListener('resize',  this.resizeCanvas.bind(this, false));
-    window.addEventListener('resize', this.debounce((e) => { this.drawCanvas(); }, 300));
+    window.addEventListener('keyup',   this.handleKeys.bind(this, false));
+    window.addEventListener('keydown', this.handleKeys.bind(this, true));
+    window.addEventListener('resize', this.debounce((e) => { this.resizeCanvas(); }, 300));
     this.getCanvas();
-    this.drawCanvas();
+
+    // Request next frame
+    requestAnimationFrame(() => {this.update()});
+  }
+
+  // Tidy up after yourself
+  componentWillUnmount() {
+    window.removeEventListener('keyup', this.handleKeys);
+    window.removeEventListener('keydown', this.handleKeys);
+    window.removeEventListener('resize', this.debounce);
   }
 
   // Trim down redraw function calls to be more processor friendly
@@ -83,9 +112,24 @@ export default class Game extends Component {
     }
   }
 
+  handleKeys(value, e){
+    let keys = this.state.keys;
+    if(e.keyCode === KEY.LEFT   || e.keyCode === KEY.A) keys.left  = value;
+    if(e.keyCode === KEY.RIGHT  || e.keyCode === KEY.D) keys.right = value;
+    if(e.keyCode === KEY.UP     || e.keyCode === KEY.W) keys.up    = value;
+    if(e.keyCode === KEY.DOWN   || e.keyCode === KEY.S) keys.down  = value;
+    if(e.keyCode === KEY.SPACE) keys.space = value;
+        
+    this.setState({
+      keys: keys,
+    }, () => {
+      console.log(this.state.keys);
+    });
+  }
   
   // Resize Canvas
-  drawCanvas() {
+  // (only runs on resize event)
+  resizeCanvas() {
     const st = this.state;
 
     this.setState({
@@ -102,12 +146,22 @@ export default class Game extends Component {
     }, () => {
       // After setState do stuff
       const st = this.state;
-      console.log(st);
-      this.drawHero(st.centerPos, st.box.height, st.box.width, st.box.height);
+      console.log(`resizeCanvas: ${st}`);
+      this.drawHero(st.hero.x, st.hero.y, st.box.width, st.box.height);
       this.drawBoxes(st.box.width, st.box.height);
 
     });
 
+  };
+
+  // Draw Canvas
+  drawCanvas() {   
+    // After setState do stuff
+    const st = this.state;
+    console.log(`drawCanvas: ${st}`);
+    this.drawHero(st.hero.x, st.hero.y, st.box.width, st.box.height);
+    this.drawBoxes(st.box.width, st.box.height);
+   
   };
   
   
@@ -155,6 +209,22 @@ export default class Game extends Component {
         }
       });
     });
+  }
+
+
+  // Update
+  update() {
+    const context = this.state.context;
+    const keys = this.state.keys;
+
+    context.save();
+    context.scale(this.state.screen.ratio, this.state.screen.ratio);
+
+    context.restore();
+
+    // Next frame
+    requestAnimationFrame(() => {this.update()});
+
   }
   
 

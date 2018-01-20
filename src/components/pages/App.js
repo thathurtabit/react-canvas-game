@@ -46,6 +46,8 @@ const Fade = ({ children, ...props }) => (
 // Set my initial state
 const initialState = {
   siteTitle: siteData.title,
+  siteIntro: introPageData.p1,
+  siteInstructions: introPageData.p2,
 };
 
 
@@ -79,7 +81,10 @@ export default class App extends Component {
                 <h1 className="App-title">{this.state.siteTitle}</h1>
               </header>
               <p className="App-intro">
-                Use [A][S][W][D] or [←][↑][↓][→] to MOVE
+                {this.state.siteIntro}
+              </p>
+              <p className="App-intro">
+                {this.state.siteInstructions}
               </p>
             </Intro>
           </Column>

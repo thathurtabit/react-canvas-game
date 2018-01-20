@@ -1,7 +1,6 @@
 const introPageData = {
-  p1: "Intro title",
-  p2: "This is a simple game where you can do stuff in canvas.",
-  p3: "It's just for fun",
+  p1: "This is a simple game where you can do stuff in canvas.",
+  p2: "Use [A][S][W][D] or [←][↑][↓][→] to MOVE",
 }
 
 export default introPageData;
