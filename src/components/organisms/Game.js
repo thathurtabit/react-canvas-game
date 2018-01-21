@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import styled from 'styled-components';
+import throttle from 'lodash.throttle';
 
 const KEY = {
   LEFT:  37,
@@ -12,6 +13,27 @@ const KEY = {
   S: 83,
   SPACE: 32,
 };
+
+const boxesMatrix = [
+  [0,0,0,0,0,0,0,0,0,0],
+  [0,0,0,0,0,0,0,0,0,0],
+  [0,0,0,0,0,0,0,0,0,0],
+  [0,0,0,0,0,0,0,0,0,0],
+  [0,0,0,0,0,0,0,0,0,0],
+  [1,1,1,1,1,0,1,1,1,1],
+  [1,1,1,1,1,0,1,1,1,1],
+  [1,1,1,0,0,0,1,1,1,1],
+  [1,1,1,0,1,1,1,1,1,1],
+  [1,1,1,0,1,1,1,1,1,1],
+  [1,0,0,0,1,1,1,1,1,1],
+  [1,0,1,1,1,1,1,1,1,1],
+  [1,0,0,0,0,0,0,0,0,1],
+  [1,1,1,1,1,1,1,1,0,1],
+  [1,1,0,0,0,0,1,0,0,1],
+  [1,1,0,1,1,0,0,0,1,1],
+  [1,1,0,0,0,0,1,1,1,1],
+  [1,1,1,1,1,0,1,1,1,1],
+];
 
 
 // Set my initial state
@@ -29,6 +51,7 @@ const initialState = {
   box: {
     width: (window.innerWidth / 2) / 10,
     height: (window.innerWidth / 2) / 10,
+    offsetY: 0,
   },
   hero: {
     x: (window.innerWidth / 2) / 2,
@@ -67,6 +90,8 @@ export default class Game extends Component {
     super(props);
     this.state = initialState;
     this.getCanvas = this.getCanvas.bind(this);
+    this.handleKeyUp = this.handleKeyUp.bind(this, true);
+    this.handleKeyDown = this.handleKeyDown.bind(this, true);
     this.startGameThrottledAnimation = this.startGameThrottledAnimation.bind(this);
   }
 
@@ -78,7 +103,8 @@ export default class Game extends Component {
     }, () => {
       const st = this.state;
       // Draw on canvas after we've got the ref to it
-      this.drawBoxes(st.box.width, st.box.height);
+      this.drawHero(st.hero.x, st.hero.y, st.box.width, st.box.height);
+      this.drawBoxes(boxesMatrix, st.box.width, st.box.height, st.box.offsetY);
     });
   }
 
@@ -95,8 +121,8 @@ export default class Game extends Component {
 
   componentDidMount(props) {
     // Add 'resize' listener to window
-    window.addEventListener('keyup', this.handleKeyUp.bind(this, true));
-    window.addEventListener('keydown', this.handleKeyDown.bind(this, true));
+    window.addEventListener('keyup', this.handleKeyUp);
+    window.addEventListener('keydown', throttle(this.handleKeyDown, 300)); 
     window.addEventListener('resize', this.debounce((e) => { this.resizeCanvas(); }, 300));
     this.getCanvas();
 
@@ -148,8 +174,6 @@ export default class Game extends Component {
   // Get things moving
   startGameThrottledAnimation() {
 
-    
-    
     // if inGame is true
     if (this.state.inGame) {
 
@@ -172,10 +196,10 @@ export default class Game extends Component {
         then = now - (elapsed % fpsInterval);
 
         //console.log(`startGameThrottledAnimation: now: ${now}, elapsed: ${elapsed}, then: ${then}, fpsInterval: ${fpsInterval}`);
+
         
         this.updateHero();
-
-        //this.updateGame();
+        this.updateGame();
 
       }
     }
@@ -235,8 +259,8 @@ export default class Game extends Component {
       // After setState do stuff
       const st = this.state;
       console.log(`resizeCanvas: ${st} | devicePixelRatio: ${st.screen.ratio}`);
-      //this.drawHero(st.hero.x, st.hero.y, st.box.width, st.box.height);
-      //this.drawBoxes(st.box.width, st.box.height);
+      this.drawHero(st.hero.x, st.hero.y, st.box.width, st.box.height);
+      this.drawBoxes(boxesMatrix, st.box.width, st.box.height, st.box.offsetY);
 
     });
   }
@@ -253,44 +277,33 @@ export default class Game extends Component {
   // Draw Hero
   drawHero(xPos, yPos, boxWidth, boxHeight) {
     const context = this.state.context;
+    // Clear before redrawing
+    //context.clearRect(0, 0, this.state.screen.width, this.state.screen.height);
 
-    context.fillStyle = `orange`;
+    context.fillStyle = `rgba(255,255,0,0.5`;
     context.fillRect(xPos, yPos, boxWidth, boxHeight);
   }
   
   // Draw Boxes
-  drawBoxes(boxWidth, boxHeight) {
+  drawBoxes(matrix, boxWidth, boxHeight, offsetY) {
     const context = this.state.context;
 
-    const boxesMatrix = [
-    [0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0,0],
-    [1,1,1,1,1,0,1,1,1,1],
-    [1,1,1,1,1,0,1,1,1,1],
-    [1,1,1,0,0,0,1,1,1,1],
-    [1,1,1,0,1,1,1,1,1,1],
-    [1,1,1,0,1,1,1,1,1,1],
-    [1,0,0,0,1,1,1,1,1,1],
-    [1,0,1,1,1,1,1,1,1,1],
-    [1,0,0,0,0,0,0,0,0,1],
-    [1,1,1,1,1,1,1,1,0,1],
-    [1,1,0,0,0,0,1,0,0,1],
-    [1,1,0,1,1,0,0,0,1,1],
-    [1,1,0,0,0,0,1,1,1,1],
-    [1,1,1,1,1,0,1,1,1,1],
-    ];
-    
+    // Clear before redrawing
+    //context.clearRect(0, 0, this.state.screen.width, this.state.screen.height);
+
     // Rows in Matrix
-    boxesMatrix.forEach((row, y) => {
+    matrix.forEach((row, y) => {
        // Cols in row
        row.forEach((value, x) => {
         // If there's a value, draw something
         if(value !==0) {
           context.fillStyle = `rgba(0,0,0,${0.25 * y / 10})`;
-          context.fillRect(boxWidth * x,boxHeight * y,boxWidth, boxHeight);
+          context.fillRect(
+            boxWidth * x,
+            boxHeight * y + offsetY,
+            boxWidth,
+            boxHeight
+          );
         }
       });
      });
@@ -304,11 +317,11 @@ export default class Game extends Component {
 
       const st = this.state;
       const context = st.context;
-      context.save();
+      //context.save();
       context.scale(st.screen.ratio, st.screen.ratio);
 
-      let x = parseFloat(st.hero.x);
-      let y = parseFloat(st.hero.y);
+      let x = st.hero.x;
+      let y = st.hero.y;
       let width = st.box.width;
       let height = st.box.height;
 
@@ -337,13 +350,10 @@ export default class Game extends Component {
             y: y,
           },
         }, () => {
-
-        context.restore();
-
-        // Update hero
-        this.drawHero(st.hero.x, st.hero.y, st.box.width, st.box.height);
-
-      });
+          //context.restore();
+          // Update hero
+          this.drawHero(st.hero.x, st.hero.y, st.box.width, st.box.height);
+        });
     }
 
   }
@@ -359,6 +369,8 @@ export default class Game extends Component {
       const context = st.context;
       context.save();
       context.scale(st.screen.ratio, st.screen.ratio);
+
+      this.drawBoxes(boxesMatrix, st.box.width, st.box.height, st.box.offsetY);
 
       // let y = parseFloat(st.blocks.y);
       // let width = st.box.width;
