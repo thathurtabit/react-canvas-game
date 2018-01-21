@@ -193,15 +193,13 @@ export default class Game extends Component {
   }
 
   handleKeyDown(value, e) {
-    
+  
     // if inGame is true, start setting the direction state
     if (this.state.inGame) {
 
       // Assign direction info
       let direction;
-
-      console.log(`Key Down`);
-
+ 
       if(e.keyCode === KEY.LEFT   || e.keyCode === KEY.A) direction = "left";
       if(e.keyCode === KEY.RIGHT  || e.keyCode === KEY.D) direction = "right";
       if(e.keyCode === KEY.UP     || e.keyCode === KEY.W) direction = "up";
@@ -362,9 +360,9 @@ export default class Game extends Component {
       context.save();
       context.scale(st.screen.ratio, st.screen.ratio);
 
-      let y = parseFloat(st.blocks.y);
-      let width = st.box.width;
-      let height = st.box.height;
+      // let y = parseFloat(st.blocks.y);
+      // let width = st.box.width;
+      // let height = st.box.height;
 
       // Set the state direction based on the above logic
       // this.setState({
