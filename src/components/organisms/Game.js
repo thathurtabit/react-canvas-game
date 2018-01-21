@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import styled from 'styled-components';
 
 const KEY = {
   LEFT:  37,
@@ -14,6 +15,7 @@ const KEY = {
 
 // Set my initial state
 const initialState = {
+  inGame: false,
   siteTitle: "Canvas Game",
   screen: {
     width: window.innerWidth / 2,
@@ -33,10 +35,15 @@ const initialState = {
   context: null,
   direction: '',
   animation: {
-    stop: false,
     fps: 3,
   }
 };
+
+const GameInfoTL = styled.p`
+  position: absolute;
+  top: 30px;
+  left: 30px;
+`;
 
   
 // HELPERS
@@ -60,6 +67,7 @@ export default class Game extends Component {
     super(props);
     this.state = initialState;
     this.getCanvas = this.getCanvas.bind(this);
+    this.animate = this.animate.bind(this);
   }
 
   // Refs and the dom in React 16+ // https://reactjs.org/docs/refs-and-the-dom.html?
@@ -78,14 +86,30 @@ export default class Game extends Component {
     //init
   }
 
-  componentDidMount() {
+  componentWillReceiveProps(nextProps) {
+    // Animation (requestAnimationFrame throttled)
+    this.setState({
+      inGame: nextProps.gameRunning,
+    }, () =>{
+      this.startAnimating(this.state.animation.fps);
+      console.log(`componentWillReceiveProps: inGame: ${this.state.inGame}`);
+    });    
+  }
+
+  componentDidMount(props) {
     // Add 'resize' listener to window
     window.addEventListener('keydown', this.handleKeys.bind(this, true));
     window.addEventListener('resize', this.debounce((e) => { this.resizeCanvas(); }, 300));
     this.getCanvas();
 
-    // Animation (requestAnimationFrame throttled)
-    this.startAnimating(this.state.animation.fps);
+    // Set inGame status
+    this.setState({
+      inGame: this.props.gameRunning,
+    }, () =>{
+      this.startAnimating(this.state.animation.fps);
+      console.log(`componentDidMount: inGame: ${this.state.inGame}`);
+    });
+
   }
 
   // Tidy up after yourself
@@ -110,49 +134,48 @@ export default class Game extends Component {
   startAnimating(fps) {
     this.setState({
       animation: {
-        fpsInterval: 1000 / fps,
+        fps: 3,
+        fpsInterval: Math.floor(1000 / fps),
         startTime: window.performance.now(),
         then: window.performance.now(),
       }
     }, () => {
-      console.log(this.state.animation);
+      console.log(`startAnimating`);
       this.animate();
     });
   }
 
   // Get things moving
   animate(newTime) {
-    //const ani = this.state.animation;
-    let now;
-    let elapsed;
-    let then = this.state.animation.then;
-    let fpsInterval = this.state.animation.fpsInterval;
 
-    // if set to top stop
-    if (this.state.stop) {
-        return;
-    }
+    // if inGame is true
+    if (this.state.inGame) {
+    
+      //const ani = this.state.animation;
+      let now;
+      let elapsed;
+      let fpsInterval = this.state.animation.fpsInterval;
+      let then = this.state.animation.then;   
+      
+      // request another frame
+      requestAnimationFrame(this.animate);
 
-    // request another frame
+      // calc elapsed time since last loop
+      now = newTime;
+      elapsed = now - then;
 
-    requestAnimationFrame(this.animate);
+      // if enough time has elapsed, draw the next frame
+      if (elapsed > fpsInterval) {
+        // Get ready for next frame by setting then=now, but...
+        // Also, adjust for fpsInterval not being multiple of 16.67
+        then = now - (elapsed % fpsInterval);
 
-    // calc elapsed time since last loop
+        console.log(`animate: now: ${now}, elapsed: ${elapsed}, then: ${then}, fpsInterval: ${fpsInterval}`);
 
-    now = newTime;
-    elapsed = now - then;
+        // Do the animation stuff
+        this.updateGame();    
 
-    // if enough time has elapsed, draw the next frame
-
-    if (elapsed > fpsInterval) {
-
-      // Get ready for next frame by setting then=now, but...
-      // Also, adjust for fpsInterval not being multiple of 16.67
-      then = now - (elapsed % fpsInterval);
-
-      // draw stuff here
-      console.log('Animation is throttled');
-
+      }
     }
   }
 
@@ -165,12 +188,15 @@ export default class Game extends Component {
     if(e.keyCode === KEY.RIGHT  || e.keyCode === KEY.D) direction = "right";
     if(e.keyCode === KEY.UP     || e.keyCode === KEY.W) direction = "up";
     if(e.keyCode === KEY.DOWN   || e.keyCode === KEY.S) direction = "down";
-        
-    this.setState({
-      direction: direction,
-    }, () => {
-      console.log(direction);
-    });
+    
+     // if inGame is true, start setting the direction state
+    if (this.state.inGame) {
+      this.setState({
+        direction: direction,
+      }, () => {
+        console.log(`direction: ${direction}`);
+      });
+    }
   }
   
   // Resize Canvas
@@ -204,7 +230,6 @@ export default class Game extends Component {
   drawCanvas() {   
     // After setState do stuff
     const st = this.state;
-    console.log(`drawCanvas: ${st}`);
     this.drawHero(st.hero.x, st.hero.y, st.box.width, st.box.height);
     this.drawBoxes(st.box.width, st.box.height);
    
@@ -260,11 +285,49 @@ export default class Game extends Component {
   // Update Game
   updateGame() {
     const context = this.state.context;
-
     context.save();
     context.scale(this.state.screen.ratio, this.state.screen.ratio);
 
-    //console.log('Animating...');
+    let movement;
+
+    // Get current direction and move accordingly
+    switch (this.state.direction) {
+    case 'up':
+      this.setState({
+        hero: {
+          x: this.state.hero.x,
+          y: this.state.hero.y -= this.state.boxHeight,
+        },
+      });
+      break;
+    case 'down':
+      this.setState({
+        hero: {
+          x: this.state.hero.x,
+          y: this.state.hero.y += this.state.boxHeight,
+        },
+      });
+      break;
+    case 'left':
+      this.setState({
+        hero: {
+          x: this.state.hero.x -= this.state.boxWidth,
+          y: this.state.hero.y,
+        },
+      });
+      break;
+    case 'right':
+      this.setState({
+        hero: {
+          x: this.state.hero.x += this.state.boxWidth,
+          y: this.state.hero.y,
+        },
+      });
+      break;
+    default:
+      break;
+  }
+
 
     context.restore();
 
@@ -276,11 +339,14 @@ export default class Game extends Component {
 
   render() {
     return (
-      <canvas
-        ref={canvas => this.canvas = canvas}
-        width={this.state.screen.width}
-        height={this.state.screen.height}
-      />
+      <div>
+        <GameInfoTL> Game running is: {this.props.gameRunning ? 'True' : 'False'}</GameInfoTL>
+        <canvas
+          ref={canvas => this.canvas = canvas}
+          width={this.state.screen.width}
+          height={this.state.screen.height}
+        />
+      </div>
     );
   }
 }

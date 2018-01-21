@@ -4,11 +4,14 @@ import { CSSTransition } from 'react-transition-group';
 import siteData from '../../api/siteData';
 import introPageData from '../../api/introPageData';
 import Game from '../../components/organisms/Game';
+import Button from '../../components/atoms/Button';
 
 
 const SiteWrap = styled.section`
   align-items: center;
   display: flex;
+  font-family: sans-serif;
+  font-size: 0.875rem;
   flex-direction: row;
   justify-content: center;
   height: 100%;
@@ -21,6 +24,7 @@ const Column = styled.section`
   height: calc(100% - 40px);
   justify-content: center;
   padding: 20px;
+  position: relative;
 `;
 
 const Intro = styled.section`
@@ -47,6 +51,11 @@ const initialState = {
   siteTitle: siteData.title,
   siteIntro: introPageData.p1,
   siteInstructions: introPageData.p2,
+  button: {
+    text: "Start",
+    disabled: false,
+  },
+  gameRunning: false,
 };
 
 
@@ -56,7 +65,7 @@ export default class App extends Component {
   constructor(props) {
     super(props);
     this.state = initialState;
-
+    this.gameTrigger = this.gameTrigger.bind(this);
   }
 
   // React Lifecycle
@@ -68,6 +77,16 @@ export default class App extends Component {
         show: !this.state.show,
       });
     }, duration);
+  }
+
+  gameTrigger() {
+    this.setState({
+      button: {
+        text: this.state.gameRunning ? "Start" : "Stop",
+        disabled: false,
+      },
+      gameRunning: !this.state.gameRunning,
+    });
   }
 
   render() {
@@ -85,10 +104,11 @@ export default class App extends Component {
               <p className="App-intro">
                 {this.state.siteInstructions}
               </p>
+              <Button gameTrigger={this.gameTrigger} text={this.state.button.text} disabled={this.state.button.disabled} />
             </Intro>
           </Column>
           <Column>
-            <Game />
+            <Game gameRunning={this.state.gameRunning} />
           </Column>
         </SiteWrap>
       </Fade>
