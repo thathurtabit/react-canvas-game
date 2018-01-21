@@ -89,6 +89,10 @@ export default class App extends Component {
     });
   }
 
+  handleKeyPress() {
+    console.error('KEY PRESS BABY');
+  }
+
   render() {
     return (
       <Fade in={this.state.show}>
@@ -108,7 +112,7 @@ export default class App extends Component {
             </Intro>
           </Column>
           <Column>
-            <Game gameRunning={this.state.gameRunning} />
+            <Game gameRunning={this.state.gameRunning} handleKeyPress={this.handleKeyPress} />
           </Column>
         </SiteWrap>
       </Fade>
