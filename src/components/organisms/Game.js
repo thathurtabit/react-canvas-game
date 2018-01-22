@@ -32,6 +32,25 @@ const boxesMatrix = [
   [1,1,0,1,1,0,0,0,1,1],
   [1,1,0,0,0,0,1,1,1,1],
   [1,1,1,1,1,0,1,1,1,1],
+  [1,1,1,1,1,0,1,1,1,1],
+  [0,0,0,0,0,0,1,1,1,1],
+  [0,1,1,1,1,1,1,1,1,1],
+  [0,1,1,1,1,1,1,1,1,1],
+  [0,0,0,1,0,0,0,0,1,1],
+  [1,1,0,1,0,1,1,0,1,1],
+  [1,0,0,1,0,1,0,0,1,1],
+  [1,0,1,1,0,1,0,1,1,1],
+  [1,0,0,0,0,1,0,0,1,1],
+  [1,1,1,1,1,1,1,0,1,1],
+  [1,1,1,1,1,1,1,0,0,0],
+  [1,1,1,1,1,1,1,1,1,0],
+  [1,1,1,0,0,0,0,0,0,0],
+  [1,1,1,0,1,1,1,1,1,1],
+  [1,1,1,0,0,1,1,1,1,1],
+  [1,1,1,1,0,0,1,1,1,1],
+  [1,1,1,1,1,0,0,1,1,1],
+  [1,1,1,1,1,1,0,1,1,1],
+  [1,1,1,1,1,1,0,1,1,1],
 ];
 
 
@@ -57,8 +76,8 @@ const initialState = {
   hero: {
     xPos: (window.innerWidth / 2) / 2,
     yPos: 0,
-    width: (window.innerWidth / 10) / 3,
-    height: (window.innerWidth / 10) / 3,
+    width: (window.innerWidth / 10) / 8,
+    height: (window.innerWidth / 10) / 8,
   },
   centerPos: (window.innerWidth / 2) / 2,
   context: null,
@@ -80,7 +99,6 @@ export default class Game extends Component {
     super(props);
     this.state = initialState;
     this.getCanvas = this.getCanvas.bind(this);
-    this.handleKeyUp = this.handleKeyUp.bind(this, true);
     this.handleKeyDown = this.handleKeyDown.bind(this, true);
     this.startAnimation = this.startAnimation.bind(this);
   }
@@ -105,13 +123,10 @@ export default class Game extends Component {
     }, () =>{
       // GAME ANIMATION
       this.startAnimation();
-      //console.log(`componentWillReceiveProps: inGame: ${this.state.inGame}`);
     });
   }
 
-  componentDidMount(props) {
-    // Add 'resize' listener to window
-    window.addEventListener('keyup', this.handleKeyUp);
+  componentDidMount(props) {    
     window.addEventListener('keydown', this.handleKeyDown); 
     window.addEventListener('resize', this.debounce((e) => { this.resizeCanvas(); }, 300));
     this.getCanvas();
@@ -129,7 +144,7 @@ export default class Game extends Component {
 
   // Tidy up after yourself
   componentWillUnmount() {
-    window.removeEventListener('keyup', this.handleKeyUp);
+    //window.removeEventListener('keyup', this.handleKeyUp);
     window.removeEventListener('keydown', this.handleKeyDown);
     window.removeEventListener('resize', this.debounce);
   }
@@ -166,17 +181,6 @@ export default class Game extends Component {
     }
   }
 
-  handleKeyUp(value, e) {    
-     // if inGame is true, start setting the direction state
-     if (this.state.inGame) {
-      // Set directon state
-      this.setState({
-        keyPressed: false,
-        direction: '',
-      });
-    }
-  }
-
   handleKeyDown(value, e) {
   
     // if inGame is true, start setting the direction state
@@ -184,7 +188,8 @@ export default class Game extends Component {
 
       // Assign direction info
       let direction;
- 
+  
+      // Note: is event.keyCode deprecated?
       if(e.keyCode === KEY.LEFT   || e.keyCode === KEY.A) direction = "left";
       if(e.keyCode === KEY.RIGHT  || e.keyCode === KEY.D) direction = "right";
       if(e.keyCode === KEY.UP     || e.keyCode === KEY.W) direction = "up";
@@ -219,8 +224,8 @@ export default class Game extends Component {
       hero: {
         xPos: (window.innerWidth / 2) / 2,
         yPos: st.hero.yPos,
-        width: (window.innerWidth / 10) / 3,
-        height: (window.innerWidth / 10) / 3,
+        width: (window.innerWidth / 10) / 8,
+        height: (window.innerWidth / 10) / 8,
       },
       centerPos: st.screen.width / 2,
     }, () => {
@@ -299,14 +304,12 @@ export default class Game extends Component {
         hero: {
           xPos: x,
           yPos: y,
-          width: (window.innerWidth / 10) / 3,
-          height: (window.innerWidth / 10) / 3,
+          width: (window.innerWidth / 10) / 8,
+          height: (window.innerWidth / 10) / 8,
         }      
       }, () => {
-        //context.restore();
         // Update hero
         this.drawHero(this.state.context, st.hero.xPos, st.hero.yPos, st.hero.width, st.hero.height);
-        //console.log(`Hero props: ${st.hero}`);
       });
     }
   }
@@ -315,13 +318,12 @@ export default class Game extends Component {
   // Update Game (thottled)
   updateGame() {
 
-    // if inGame is true
+    // if inGame is truews
     if (this.state.inGame) {
 
       const st = this.state;
       const context = st.context;
       context.save();
-      //context.scale(st.screen.ratio, st.screen.ratio);
 
       // Move our boxes upwards (at Game Speed)
       let offsetY = st.box.yPos;
@@ -335,15 +337,12 @@ export default class Game extends Component {
             yPos: offsetY,
           },
         }, () => {
-        //context.restore();
         // Update boxes
         this.drawBoxes(this.state.context, boxesMatrix, st.box.width, st.box.height, st.box.yPos);
-        //console.log(`Game props: ${st.box}`);
       });
       
     }
   }
-
 
   render() {
     return (
