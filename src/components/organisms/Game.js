@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
 import styled from 'styled-components';
-import throttle from 'lodash.throttle';
 
 const KEY = {
   LEFT:  37,
@@ -69,19 +68,6 @@ const GameInfoTL = styled.p`
 `;
 
 
-// HELPERS
-
-// Generate random color
-// const randomColor = () => { 
-//   return('#'+Math.floor(Math.random()*16777215).toString(16));
-// }
-
-// // Generate Random Alpha
-// const randomAlpha = () => { 
-//   return((Math.random() * (1 - 0.75) + 0.75));
-// }
-
-
 // MY GAME COMPONENT
 export default class Game extends Component {
 
@@ -92,7 +78,7 @@ export default class Game extends Component {
     this.getCanvas = this.getCanvas.bind(this);
     this.handleKeyUp = this.handleKeyUp.bind(this, true);
     this.handleKeyDown = this.handleKeyDown.bind(this, true);
-    this.startGameThrottledAnimation = this.startGameThrottledAnimation.bind(this);
+    this.startAnimation = this.startAnimation.bind(this);
   }
 
   // Refs and the dom in React 16+ // https://reactjs.org/docs/refs-and-the-dom.html?
@@ -103,8 +89,8 @@ export default class Game extends Component {
     }, () => {
       const st = this.state;
       // Draw on canvas after we've got the ref to it
-      this.drawHero(st.hero.x, st.hero.y, st.box.width, st.box.height);
-      this.drawBoxes(boxesMatrix, st.box.width, st.box.height, st.box.offsetY);
+      this.drawHero(this.state.context, st.hero.x, st.hero.y, st.box.width, st.box.height);
+      this.drawBoxes(this.state.context, boxesMatrix, st.box.width, st.box.height, st.box.offsetY);
     });
   }
 
@@ -114,7 +100,7 @@ export default class Game extends Component {
       inGame: nextProps.gameRunning,
     }, () =>{
       // GAME ANIMATION
-      this.setupGameThrottledAnimation();
+      this.startAnimation();
       //console.log(`componentWillReceiveProps: inGame: ${this.state.inGame}`);
     });
   }
@@ -122,7 +108,7 @@ export default class Game extends Component {
   componentDidMount(props) {
     // Add 'resize' listener to window
     window.addEventListener('keyup', this.handleKeyUp);
-    window.addEventListener('keydown', throttle(this.handleKeyDown, 300)); 
+    window.addEventListener('keydown', this.handleKeyDown); 
     window.addEventListener('resize', this.debounce((e) => { this.resizeCanvas(); }, 300));
     this.getCanvas();
 
@@ -131,7 +117,7 @@ export default class Game extends Component {
       inGame: this.props.gameRunning,
     }, () =>{
       // GAME ANIMATION
-      this.setupGameThrottledAnimation();
+      this.startAnimation();
       //console.log(`componentDidMount: inGame: ${this.state.inGame}`);
     });
 
@@ -157,51 +143,22 @@ export default class Game extends Component {
   }
 
   // GAME
-  // Start Animating...
-  setupGameThrottledAnimation() {
-    this.setState({
-      gameAnimation: {
-        fpsInterval: (1000 / 1),
-        then: Date.now(),
-      }
-    }, () => {
-      //console.log(`setupGameThrottledAnimation`);
-      this.startGameThrottledAnimation();
-    });
-  }
-
-  // GAME
   // Get things moving
-  startGameThrottledAnimation() {
+  startAnimation() {
 
     // if inGame is true
     if (this.state.inGame) {
-
-      const tsga = this.state.gameAnimation;
-
-      let fpsInterval = tsga.fpsInterval;
-      let then = tsga.then;
       
       // request another frame
-      requestAnimationFrame(this.startGameThrottledAnimation);
+      requestAnimationFrame(this.startAnimation);
 
-      // calc elapsed time since last loop
-      let now = Date.now();
-      let elapsed = now - then;
+      const context = this.state.context;
+      // Clear before redrawing
+      //context.clearRect(0, 0, this.state.screen.width, this.state.screen.height);
 
-      // if enough time has elapsed, draw the next frame
-      if (elapsed > fpsInterval) {
-        // Get ready for next frame by setting then=now, but...
-        // Also, adjust for fpsInterval not being multiple of 16.67
-        then = now - (elapsed % fpsInterval);
+      this.updateHero();
+      this.updateGame();
 
-        //console.log(`startGameThrottledAnimation: now: ${now}, elapsed: ${elapsed}, then: ${then}, fpsInterval: ${fpsInterval}`);
-
-        
-        this.updateHero();
-        this.updateGame();
-
-      }
     }
   }
 
@@ -253,43 +210,27 @@ export default class Game extends Component {
       box: {
         width: st.screen.width / st.gameRows,
         height: st.screen.width / st.gameRows,
+        offsetY: st.box.offsetY,
       },
       centerPos: st.screen.width / 2,
     }, () => {
       // After setState do stuff
       const st = this.state;
       console.log(`resizeCanvas: ${st} | devicePixelRatio: ${st.screen.ratio}`);
-      this.drawHero(st.hero.x, st.hero.y, st.box.width, st.box.height);
-      this.drawBoxes(boxesMatrix, st.box.width, st.box.height, st.box.offsetY);
+      this.drawHero(this.state.context, st.hero.x, st.hero.y, st.box.width, st.box.height);
+      this.drawBoxes(this.state.context, boxesMatrix, st.box.width, st.box.height, st.box.offsetY);
 
     });
   }
-
-  // Draw Canvas
-  // drawCanvas() {
-  //   // After setState do stuff
-  //   const st = this.state;
-  //   this.drawHero(st.hero.x, st.hero.y, st.box.width, st.box.height);
-  //   this.drawBoxes(st.box.width, st.box.height);
-
-  // }
   
   // Draw Hero
-  drawHero(xPos, yPos, boxWidth, boxHeight) {
-    const context = this.state.context;
-    // Clear before redrawing
-    //context.clearRect(0, 0, this.state.screen.width, this.state.screen.height);
-
-    context.fillStyle = `rgba(255,255,0,0.5`;
+  drawHero(context, xPos, yPos, boxWidth, boxHeight) {
+    context.fillStyle = `orange`;
     context.fillRect(xPos, yPos, boxWidth, boxHeight);
   }
   
   // Draw Boxes
-  drawBoxes(matrix, boxWidth, boxHeight, offsetY) {
-    const context = this.state.context;
-
-    // Clear before redrawing
-    //context.clearRect(0, 0, this.state.screen.width, this.state.screen.height);
+  drawBoxes(context, matrix, boxWidth, boxHeight, offsetY) {
 
     // Rows in Matrix
     matrix.forEach((row, y) => {
@@ -306,7 +247,7 @@ export default class Game extends Component {
           );
         }
       });
-     });
+    });
   }
 
   // Update hero (no throttling)
@@ -316,28 +257,25 @@ export default class Game extends Component {
     if (this.state.inGame) {
 
       const st = this.state;
-      const context = st.context;
-      //context.save();
-      context.scale(st.screen.ratio, st.screen.ratio);
 
       let x = st.hero.x;
       let y = st.hero.y;
-      let width = st.box.width;
-      let height = st.box.height;
+      let xOffset = 1;
+      let yOffset = 1;
 
       // Get current direction and move accordingly
       switch (st.direction) {
         case 'up':
-        y -= height;
+        y -= yOffset;
         break;
         case 'down':
-        y += height;
+        y += yOffset;
         break;
         case 'left':
-        x -= width;
+        x -= xOffset;
         break;
         case 'right':
-        x += width;
+        x += xOffset;
         break;
         default:
         break;
@@ -350,12 +288,12 @@ export default class Game extends Component {
             y: y,
           },
         }, () => {
-          //context.restore();
-          // Update hero
-          this.drawHero(st.hero.x, st.hero.y, st.box.width, st.box.height);
-        });
+        //context.restore();
+        // Update hero
+        this.drawHero(this.state.context, st.hero.x, st.hero.y, st.box.width, st.box.height);
+        console.log(`Hero props: ${st.hero}`);
+      });
     }
-
   }
 
 
@@ -370,26 +308,24 @@ export default class Game extends Component {
       context.save();
       context.scale(st.screen.ratio, st.screen.ratio);
 
-      this.drawBoxes(boxesMatrix, st.box.width, st.box.height, st.box.offsetY);
-
-      // let y = parseFloat(st.blocks.y);
-      // let width = st.box.width;
-      // let height = st.box.height;
+      // Move our boxes up slowly
+      let offsetY = this.state.box.offsetY;
+      offsetY -= 1;
 
       // Set the state direction based on the above logic
-      // this.setState({
-      //     blocks: {
-      //       x: x,
-      //       y: y,
-      //     },
-      //   }, () => {
-
-      //   context.restore();
-
-      //   // Update hero
-      //   this.drawBoxes(st.box.width, st.box.height);
-
-      // });
+      this.setState({
+          box: {
+            width: (window.innerWidth / 2) / 10,
+            height: (window.innerWidth / 2) / 10,
+            offsetY: offsetY,
+          },
+        }, () => {
+        //context.restore();
+        // Update boxes
+        this.drawBoxes(this.state.context, boxesMatrix, st.box.width, st.box.height, st.box.offsetY);
+        console.log(`Game props: ${st.box}`);
+      });
+      
     }
   }
 
@@ -398,9 +334,9 @@ export default class Game extends Component {
     return (
       <div>
       <GameInfoTL>
-      Game running is: {this.props.gameRunning ? 'True' : 'False'} <br />
-      Game FPS: <br />
-      Hero FPS: <br />
+        Game running is: {this.props.gameRunning ? 'True' : 'False'} <br />
+        Game FPS: <br />
+        Hero FPS: <br />
       </GameInfoTL>
       <canvas
       ref={canvas => this.canvas = canvas}
