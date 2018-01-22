@@ -47,14 +47,18 @@ const initialState = {
     ratio: window.devicePixelRatio || 1,
   },
   gameRows: 10,
+  gameSpeed: 1,
+  heroSpeed: 3,
   box: {
     width: (window.innerWidth / 2) / 10,
     height: (window.innerWidth / 2) / 10,
-    offsetY: 0,
+    yPos: 0,
   },
   hero: {
-    x: (window.innerWidth / 2) / 2,
-    y: 0,
+    xPos: (window.innerWidth / 2) / 2,
+    yPos: 0,
+    width: (window.innerWidth / 10) / 3,
+    height: (window.innerWidth / 10) / 3,
   },
   centerPos: (window.innerWidth / 2) / 2,
   context: null,
@@ -89,8 +93,8 @@ export default class Game extends Component {
     }, () => {
       const st = this.state;
       // Draw on canvas after we've got the ref to it
-      this.drawHero(this.state.context, st.hero.x, st.hero.y, st.box.width, st.box.height);
-      this.drawBoxes(this.state.context, boxesMatrix, st.box.width, st.box.height, st.box.offsetY);
+      this.drawHero(this.state.context, st.hero.xPos, st.hero.yPos, st.hero.width, st.hero.height);
+      this.drawBoxes(this.state.context, boxesMatrix, st.box.width, st.box.height, st.box.yPos);
     });
   }
 
@@ -154,10 +158,10 @@ export default class Game extends Component {
 
       const context = this.state.context;
       // Clear before redrawing
-      //context.clearRect(0, 0, this.state.screen.width, this.state.screen.height);
+      context.clearRect(0, 0, this.state.screen.width, this.state.screen.height);
 
-      this.updateHero();
       this.updateGame();
+      this.updateHero();
 
     }
   }
@@ -208,17 +212,24 @@ export default class Game extends Component {
         ratio: window.devicePixelRatio || 1,
       },
       box: {
-        width: st.screen.width / st.gameRows,
-        height: st.screen.width / st.gameRows,
-        offsetY: st.box.offsetY,
+        width: (window.innerWidth / 2) / 10,
+        height: (window.innerWidth / 2) / 10,
+        yPos: st.box.yPos,
+      },
+      hero: {
+        xPos: (window.innerWidth / 2) / 2,
+        yPos: st.hero.yPos,
+        width: (window.innerWidth / 10) / 3,
+        height: (window.innerWidth / 10) / 3,
       },
       centerPos: st.screen.width / 2,
     }, () => {
       // After setState do stuff
       const st = this.state;
       console.log(`resizeCanvas: ${st} | devicePixelRatio: ${st.screen.ratio}`);
-      this.drawHero(this.state.context, st.hero.x, st.hero.y, st.box.width, st.box.height);
-      this.drawBoxes(this.state.context, boxesMatrix, st.box.width, st.box.height, st.box.offsetY);
+
+      this.drawHero(this.state.context, st.hero.xPos, st.hero.yPos, st.hero.width, st.hero.height);
+      this.drawBoxes(this.state.context, boxesMatrix, st.box.width, st.box.height, st.box.yPos);
 
     });
   }
@@ -230,7 +241,7 @@ export default class Game extends Component {
   }
   
   // Draw Boxes
-  drawBoxes(context, matrix, boxWidth, boxHeight, offsetY) {
+  drawBoxes(context, matrix, boxWidth, boxHeight, yPos) {
 
     // Rows in Matrix
     matrix.forEach((row, y) => {
@@ -240,8 +251,8 @@ export default class Game extends Component {
         if(value !==0) {
           context.fillStyle = `rgba(0,0,0,${0.25 * y / 10})`;
           context.fillRect(
-            boxWidth * x,
-            boxHeight * y + offsetY,
+            boxWidth * x, // xPos
+            boxHeight * y + yPos, // yPos
             boxWidth,
             boxHeight
           );
@@ -258,24 +269,26 @@ export default class Game extends Component {
 
       const st = this.state;
 
-      let x = st.hero.x;
-      let y = st.hero.y;
-      let xOffset = 1;
-      let yOffset = 1;
+      let x = st.hero.xPos;
+      let y = st.hero.yPos;
+      let heroSpeed = st.heroSpeed;
+      let gameSpeed = st.gameSpeed;
 
       // Get current direction and move accordingly
       switch (st.direction) {
         case 'up':
-        y -= yOffset;
+        y -= heroSpeed;
         break;
         case 'down':
-        y += yOffset;
+        y += heroSpeed;
         break;
         case 'left':
-        x -= xOffset;
+        x -= heroSpeed;
+        y -= gameSpeed;
         break;
         case 'right':
-        x += xOffset;
+        x += heroSpeed;
+        y -= gameSpeed;
         break;
         default:
         break;
@@ -283,15 +296,17 @@ export default class Game extends Component {
 
       // Set the state direction based on the above logic
       this.setState({
-          hero: {
-            x: x,
-            y: y,
-          },
-        }, () => {
+        hero: {
+          xPos: x,
+          yPos: y,
+          width: (window.innerWidth / 10) / 3,
+          height: (window.innerWidth / 10) / 3,
+        }      
+      }, () => {
         //context.restore();
         // Update hero
-        this.drawHero(this.state.context, st.hero.x, st.hero.y, st.box.width, st.box.height);
-        console.log(`Hero props: ${st.hero}`);
+        this.drawHero(this.state.context, st.hero.xPos, st.hero.yPos, st.hero.width, st.hero.height);
+        //console.log(`Hero props: ${st.hero}`);
       });
     }
   }
@@ -306,24 +321,24 @@ export default class Game extends Component {
       const st = this.state;
       const context = st.context;
       context.save();
-      context.scale(st.screen.ratio, st.screen.ratio);
+      //context.scale(st.screen.ratio, st.screen.ratio);
 
-      // Move our boxes up slowly
-      let offsetY = this.state.box.offsetY;
-      offsetY -= 1;
+      // Move our boxes upwards (at Game Speed)
+      let offsetY = st.box.yPos;
+      offsetY -= st.gameSpeed;
 
       // Set the state direction based on the above logic
       this.setState({
           box: {
             width: (window.innerWidth / 2) / 10,
             height: (window.innerWidth / 2) / 10,
-            offsetY: offsetY,
+            yPos: offsetY,
           },
         }, () => {
         //context.restore();
         // Update boxes
-        this.drawBoxes(this.state.context, boxesMatrix, st.box.width, st.box.height, st.box.offsetY);
-        console.log(`Game props: ${st.box}`);
+        this.drawBoxes(this.state.context, boxesMatrix, st.box.width, st.box.height, st.box.yPos);
+        //console.log(`Game props: ${st.box}`);
       });
       
     }
