@@ -103,16 +103,27 @@ export default class Game extends Component {
     this.startAnimation = this.startAnimation.bind(this);
   }
 
+  // Shortcut to Draw Hero
+  triggerHero() {
+    let st = this.state;
+    return this.drawHero(st.context, st.hero.xPos, st.hero.yPos, st.hero.width, st.hero.height);
+  }
+
+  // Shortcut to Draw Game
+  triggerGame() {
+    let st = this.state;
+    return this.drawBoxes(st.context, boxesMatrix, st.box.width, st.box.height, st.box.yPos);
+  }
+
   // Refs and the dom in React 16+ // https://reactjs.org/docs/refs-and-the-dom.html?
   getCanvas() {
     const context = this.canvas.getContext('2d');
     this.setState({
       context: context,
     }, () => {
-      const st = this.state;
       // Draw on canvas after we've got the ref to it
-      this.drawHero(this.state.context, st.hero.xPos, st.hero.yPos, st.hero.width, st.hero.height);
-      this.drawBoxes(this.state.context, boxesMatrix, st.box.width, st.box.height, st.box.yPos);
+      this.triggerHero();
+      this.triggerGame();
     });
   }
 
@@ -137,7 +148,6 @@ export default class Game extends Component {
     }, () =>{
       // GAME ANIMATION
       this.startAnimation();
-      //console.log(`componentDidMount: inGame: ${this.state.inGame}`);
     });
 
   }
@@ -198,8 +208,6 @@ export default class Game extends Component {
       // Set directon state
       this.setState({
         direction: direction,
-      }, () => {
-        console.log(`direction: ${direction}`);
       });
       
     }
@@ -233,8 +241,8 @@ export default class Game extends Component {
       const st = this.state;
       console.log(`resizeCanvas: ${st} | devicePixelRatio: ${st.screen.ratio}`);
 
-      this.drawHero(this.state.context, st.hero.xPos, st.hero.yPos, st.hero.width, st.hero.height);
-      this.drawBoxes(this.state.context, boxesMatrix, st.box.width, st.box.height, st.box.yPos);
+      this.triggerHero();
+      this.triggerGame();
 
     });
   }
@@ -309,7 +317,7 @@ export default class Game extends Component {
         }      
       }, () => {
         // Update hero
-        this.drawHero(this.state.context, st.hero.xPos, st.hero.yPos, st.hero.width, st.hero.height);
+        this.triggerHero();
       });
     }
   }
@@ -338,7 +346,7 @@ export default class Game extends Component {
           },
         }, () => {
         // Update boxes
-        this.drawBoxes(this.state.context, boxesMatrix, st.box.width, st.box.height, st.box.yPos);
+        this.triggerGame();
       });
       
     }
