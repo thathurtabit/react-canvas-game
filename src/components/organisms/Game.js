@@ -70,8 +70,6 @@ const COUNTPATHBLOCKS = () => {
   return pathBlockCount;
 }
 
-console.log(COUNTPATHBLOCKS());
-
 // Set my initial state
 const initialState = {
   inGame: false,
@@ -90,7 +88,7 @@ const initialState = {
     width: (window.innerWidth / 2) / 10,
     height: (window.innerWidth / 2) / 10,
     yPos: 0,
-    history: [],
+    history: Array(COUNTPATHBLOCKS()).fill({x: 0, y: 0}),
   },
   hero: {
     xPos: (window.innerWidth / 2) / 2,
@@ -173,9 +171,7 @@ export default class Game extends Component {
     }, () =>{
       // GAME ANIMATION
       this.startAnimation();
-    });
-
-    console.log(`Game Path Blocks ${this.state.gamePathBlocks}`);
+    }); 
 
   }
 
@@ -264,9 +260,6 @@ export default class Game extends Component {
       },
       centerPos: st.screen.width / 2,
     }), () => {
-      // After setState do stuff
-      const st = this.state;
-      console.log(`resizeCanvas: ${st} | devicePixelRatio: ${st.screen.ratio}`);
 
       // Start updates / redrawing
       this.triggerHero();
@@ -301,7 +294,7 @@ export default class Game extends Component {
   }
 
   
-  // Draw Hero
+  // Draw Hero (over and over)
   drawHero(context, xPos, yPos, heroRadius) {
     const sth = this.state.hero;
 
@@ -322,41 +315,26 @@ export default class Game extends Component {
     context.fill();
 
     this.storeHeroHistory(xPos, yPos);
-
-    console.log(sth.history);
-
   }
 
 
-    // Store Block PATH History
-  storeBlockPathHistory(xPos, yPos) {
+   // Store Block PATH History
+  storeBlockPathHistory(index, xPos, yPos) {
     const st = this.state;
-    let heroHistory = st.hero.history;
+    let blockHistory = st.block.history;
+    
+    // Update position data at [index]
+    blockHistory[index].x = xPos;
+    blockHistory[index].y = yPos;
 
-    // push an item
-    heroHistory.push({
-      x: xPos,
-      y: yPos,
-    });
-
-    // get rid of first item
-    if (st.hero.history.length > st.hero.trailLength) {
-      heroHistory.shift();
-    }
-
-    // Set with updated history
-    this.setState(prevState => ({
-      hero: {
-        ...prevState.hero,
-        history: heroHistory,
-      },
-    }));
+    //console.log(blockHistory);
   }
 
 
   
-  // Draw Blocks
+  // Draw Blocks (over and over)
   drawBlocks(context, matrix, blockWidth, blockHeight, yPos) {
+    let pathIndex = -1;
 
     // Rows in Matrix
     matrix.forEach((row, y) => {
@@ -388,7 +366,24 @@ export default class Game extends Component {
             blockHeight
           );
 
+          // This could probably be improved?
+          if (pathIndex < this.state.gamePathBlocks) {
+            pathIndex += 1;
+            this.storeBlockPathHistory(pathIndex, blockWidth * x, blockHeight * y + yPos);
+          } else {
+            pathIndex = -1;
+          }
 
+          // // NOTE: you probably don't need to setState each time?
+          // // Set with updated history
+          // this.setState(prevState => ({
+          //   block: {
+          //     ...prevState.block,
+          //     history: blockHistory,
+          //   },
+          // }), () => {
+          //   console.log(`Block Path Positions: ${st.block.history}`);
+          // });
 
         }
       });
