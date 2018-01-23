@@ -78,6 +78,8 @@ const initialState = {
     yPos: 0,
     width: (window.innerWidth / 10) / 8,
     height: (window.innerWidth / 10) / 8,
+    trailLength: 50,
+    history: [],
   },
   centerPos: (window.innerWidth / 2) / 2,
   context: null,
@@ -234,6 +236,8 @@ export default class Game extends Component {
         yPos: st.hero.yPos,
         width: (window.innerWidth / 10) / 8,
         height: (window.innerWidth / 10) / 8,
+        trailLength: 10,
+        history: st.hero.history,
       },
       centerPos: st.screen.width / 2,
     }, () => {
@@ -246,11 +250,59 @@ export default class Game extends Component {
 
     });
   }
+
+  storeHeroHistory(xPos, yPos) {
+    const st = this.state;
+    let heroHistory = st.hero.history;
+
+    // push an item
+    heroHistory.push({
+      x: xPos,
+      y: yPos,
+    });
+
+    // get rid of first item
+    if (st.hero.history.length > st.hero.trailLength) {
+      heroHistory.shift();
+    }
+
+    // Set with updated history
+    this.setState({
+      hero: {
+        xPos: (window.innerWidth / 2) / 2,
+        yPos: st.hero.yPos,
+        width: (window.innerWidth / 10) / 8,
+        height: (window.innerWidth / 10) / 8,
+        trailLength: 10,
+        history: heroHistory,
+      },
+    });
+  }
+
   
   // Draw Hero
   drawHero(context, xPos, yPos, boxWidth, boxHeight) {
-    context.fillStyle = `orange`;
-    context.fillRect(xPos, yPos, boxWidth, boxHeight);
+    const sth = this.state.hero;
+
+    // Draw Hero
+    context.fillStyle = `rgb(255,165,0)`;
+    //context.fillRect(xPos, yPos, boxWidth, boxHeight);
+    context.beginPath();
+    context.arc(xPos,yPos,boxWidth,0,2*Math.PI);
+    context.fill();
+
+    this.storeHeroHistory(xPos, yPos);
+
+    // Draw Hero Trail
+    for (let i = 0; i < sth.history.length; i++) {
+      context.fillStyle = `rgba(255,165,0,${i/sth.history.length})`;
+      context.beginPath();
+      context.arc(sth.history[i].x,sth.history[i].y,(boxWidth - i/sth.history.length),0,2*Math.PI);
+      context.fill();
+    }
+
+    console.log(sth.history);
+
   }
   
   // Draw Boxes
@@ -314,6 +366,8 @@ export default class Game extends Component {
           yPos: y,
           width: (window.innerWidth / 10) / 8,
           height: (window.innerWidth / 10) / 8,
+          trailLength: 50,
+          history: st.hero.history,
         }      
       }, () => {
         // Update hero
