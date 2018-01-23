@@ -3,9 +3,10 @@ import styled from 'styled-components';
 import PropTypes from 'prop-types';
 
 const ButtonStyles = styled.button`
-  background: palevioletred;
+  background: #4E1887;
   border: 0;
   color: #fff;
+  font-family: 'VT323', sans-serif;
   font-size: 1rem;
   letter-spacing: 0.1rem;
   padding: 1rem 3rem;

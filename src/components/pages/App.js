@@ -9,9 +9,10 @@ import Button from '../../components/atoms/Button';
 
 const SiteWrap = styled.section`
   align-items: center;
+  color: #4E1887;
   display: flex;
-  font-family: sans-serif;
-  font-size: 0.875rem;
+  font-family: 'VT323', sans-serif;
+  font-size: 1rem;
   flex-direction: row;
   justify-content: center;
   height: 100%;
@@ -30,7 +31,6 @@ const Column = styled.section`
 const Intro = styled.section`
   font-size: 1.5em;
   text-align: center;
-  color: palevioletred;
 `;
 
 const duration = 300;

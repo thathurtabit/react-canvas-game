@@ -13,7 +13,7 @@ const KEY = {
   SPACE: 32,
 };
 
-const boxesMatrix = [
+const BLOCKMATRIX = [
   [0,0,0,0,0,0,0,0,0,0],
   [0,0,0,0,0,0,0,0,0,0],
   [0,0,0,0,0,0,0,0,0,0],
@@ -50,9 +50,27 @@ const boxesMatrix = [
   [1,1,1,1,0,0,1,1,1,1],
   [1,1,1,1,1,0,0,1,1,1],
   [1,1,1,1,1,1,0,1,1,1],
-  [1,1,1,1,1,1,0,1,1,1],
+  [1,1,1,1,1,0,0,1,1,1],
 ];
 
+
+const COUNTPATHBLOCKS = () => {
+  let pathBlockCount = 0;
+
+  BLOCKMATRIX.forEach((row, y) => {
+    // Cols in row
+    row.forEach((value, x) => {
+      // If there's a value, draw the BG blocks
+      if(value === 0) {
+        pathBlockCount += 1;
+      }
+    });
+  });
+
+  return pathBlockCount;
+}
+
+console.log(COUNTPATHBLOCKS());
 
 // Set my initial state
 const initialState = {
@@ -67,11 +85,12 @@ const initialState = {
   },
   gameRows: 10,
   gameSpeed: 1,
-  heroSpeed: 3,
-  box: {
+  gamePathBlocks: COUNTPATHBLOCKS(),
+  block: {
     width: (window.innerWidth / 2) / 10,
     height: (window.innerWidth / 2) / 10,
     yPos: 0,
+    history: [],
   },
   hero: {
     xPos: (window.innerWidth / 2) / 2,
@@ -83,7 +102,7 @@ const initialState = {
   },
   centerPos: (window.innerWidth / 2) / 2,
   context: null,
-  direction: '',
+  direction: 'down',
 };
 
 const GameInfoTL = styled.p`
@@ -114,7 +133,7 @@ export default class Game extends Component {
   // Shortcut to Draw Game
   triggerGame() {
     let st = this.state;
-    return this.drawBoxes(st.context, boxesMatrix, st.box.width, st.box.height, st.box.yPos);
+    return this.drawBlocks(st.context, BLOCKMATRIX, st.block.width, st.block.height, st.block.yPos);
   }
 
   // Refs and the dom in React 16+ // https://reactjs.org/docs/refs-and-the-dom.html?
@@ -129,6 +148,7 @@ export default class Game extends Component {
     });
   }
 
+  // Triggered when new props received
   componentWillReceiveProps(nextProps) {
     // Animation (requestAnimationFrame throttled)
     this.setState({
@@ -139,6 +159,7 @@ export default class Game extends Component {
     });
   }
 
+  // Triggered at the start
   componentDidMount(props) {    
     window.addEventListener('keydown', this.handleKeyDown); 
     window.addEventListener('resize', this.debounce((e) => { this.resizeCanvas(); }, 300));
@@ -147,10 +168,14 @@ export default class Game extends Component {
     // Set inGame status
     this.setState({
       inGame: this.props.gameRunning,
+      // Make sure hero moves twice as fast as the game
+      heroSpeed: this.state.gameSpeed * 2,
     }, () =>{
       // GAME ANIMATION
       this.startAnimation();
     });
+
+    console.log(`Game Path Blocks ${this.state.gamePathBlocks}`);
 
   }
 
@@ -226,8 +251,8 @@ export default class Game extends Component {
         height: window.innerHeight,
         ratio: window.devicePixelRatio || 1,
       },
-      box: {
-        ...prevState.box,
+      block: {
+        ...prevState.block,
         width: (window.innerWidth / 2) / 10,
         height: (window.innerWidth / 2) / 10,
       },
@@ -250,6 +275,7 @@ export default class Game extends Component {
     });
   }
 
+  // Store Hero History
   storeHeroHistory(xPos, yPos) {
     const st = this.state;
     let heroHistory = st.hero.history;
@@ -281,16 +307,18 @@ export default class Game extends Component {
 
     // Draw Hero Trail
     for (let i = 0; i < sth.history.length; i++) {
-      context.fillStyle = `rgba(255, 0, 0, ${i/sth.history.length})`;
+      context.fillStyle = `rgba(0, 0, 0, ${i/sth.history.length})`;
       context.beginPath();
-      context.arc(sth.history[i].x, (sth.history[i].y -= this.state.gameSpeed), heroRadius - (0.25 * i), 0, 2 * Math.PI);
+      context.arc(sth.history[i].x, (sth.history[i].y -= this.state.gameSpeed), heroRadius - (0.15 * i), 0, 2 * Math.PI);
+      context.lineWidth = 0;
       context.fill();
     }
 
     // Draw Hero
-    context.fillStyle = `rgb(255,165,0)`;
+    context.fillStyle = `#4E1887`;
     context.beginPath();
     context.arc(xPos, yPos, heroRadius, 0, 2 * Math.PI);
+    context.lineWidth = 0;
     context.fill();
 
     this.storeHeroHistory(xPos, yPos);
@@ -298,23 +326,70 @@ export default class Game extends Component {
     console.log(sth.history);
 
   }
+
+
+    // Store Block PATH History
+  storeBlockPathHistory(xPos, yPos) {
+    const st = this.state;
+    let heroHistory = st.hero.history;
+
+    // push an item
+    heroHistory.push({
+      x: xPos,
+      y: yPos,
+    });
+
+    // get rid of first item
+    if (st.hero.history.length > st.hero.trailLength) {
+      heroHistory.shift();
+    }
+
+    // Set with updated history
+    this.setState(prevState => ({
+      hero: {
+        ...prevState.hero,
+        history: heroHistory,
+      },
+    }));
+  }
+
+
   
-  // Draw Boxes
-  drawBoxes(context, matrix, boxWidth, boxHeight, yPos) {
+  // Draw Blocks
+  drawBlocks(context, matrix, blockWidth, blockHeight, yPos) {
 
     // Rows in Matrix
     matrix.forEach((row, y) => {
        // Cols in row
        row.forEach((value, x) => {
-        // If there's a value, draw something
+        // If there's a value, draw the BG blocks
         if(value !==0) {
+
+          // Fill
           context.fillStyle = `rgba(0,0,0,${0.25 * y / 10})`;
           context.fillRect(
-            boxWidth * x, // xPos
-            boxHeight * y + yPos, // yPos
-            boxWidth,
-            boxHeight
+            blockWidth * x, // xPos
+            blockHeight * y + yPos, // yPos
+            blockWidth,
+            blockHeight
           );
+
+          // Border
+          context.lineWidth = 5;
+          context.strokeStyle = `rgba(255, 255, 255, 1)`;
+          context.stroke();
+        // Else draw hero path
+        } else {
+          context.fillStyle = `rgba(255, 0, 0, ${0.25 * y / 10})`;
+          context.fillRect(
+            blockWidth * x, // xPos
+            blockHeight * y + yPos, // yPos
+            blockWidth,
+            blockHeight
+          );
+
+
+
         }
       });
     });
@@ -378,18 +453,18 @@ export default class Game extends Component {
       const context = st.context;
       context.save();
 
-      // Move our boxes upwards (at Game Speed)
-      let offsetY = st.box.yPos;
+      // Move our Blocks upwards (at Game Speed)
+      let offsetY = st.block.yPos;
       offsetY -= st.gameSpeed;
 
       // Set the state direction based on the above logic
       this.setState(prevState => ({
-          box: {
-            ...prevState.box,
+          block: {
+            ...prevState.block,
             yPos: offsetY,
           },
         }), () => {
-        // Update boxes
+        // Update Blocks
         this.triggerGame();
       });
       
