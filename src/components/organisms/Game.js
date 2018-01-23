@@ -78,7 +78,7 @@ const initialState = {
     yPos: 0,
     width: (window.innerWidth / 10) / 8,
     height: (window.innerWidth / 10) / 8,
-    trailLength: 50,
+    trailLength: 15,
     history: [],
   },
   centerPos: (window.innerWidth / 2) / 2,
@@ -108,7 +108,7 @@ export default class Game extends Component {
   // Shortcut to Draw Hero
   triggerHero() {
     let st = this.state;
-    return this.drawHero(st.context, st.hero.xPos, st.hero.yPos, st.hero.width, st.hero.height);
+    return this.drawHero(st.context, st.hero.xPos, st.hero.yPos, st.hero.width);
   }
 
   // Shortcut to Draw Game
@@ -220,31 +220,30 @@ export default class Game extends Component {
   resizeCanvas() {
     const st = this.state;
 
-    this.setState({
+    this.setState(prevState => ({
       screen: {
         width: window.innerWidth / 2,
         height: window.innerHeight,
         ratio: window.devicePixelRatio || 1,
       },
       box: {
+        ...prevState.box,
         width: (window.innerWidth / 2) / 10,
         height: (window.innerWidth / 2) / 10,
-        yPos: st.box.yPos,
       },
       hero: {
+        ...prevState.hero,
         xPos: (window.innerWidth / 2) / 2,
-        yPos: st.hero.yPos,
         width: (window.innerWidth / 10) / 8,
         height: (window.innerWidth / 10) / 8,
-        trailLength: 10,
-        history: st.hero.history,
       },
       centerPos: st.screen.width / 2,
-    }, () => {
+    }), () => {
       // After setState do stuff
       const st = this.state;
       console.log(`resizeCanvas: ${st} | devicePixelRatio: ${st.screen.ratio}`);
 
+      // Start updates / redrawing
       this.triggerHero();
       this.triggerGame();
 
@@ -267,39 +266,34 @@ export default class Game extends Component {
     }
 
     // Set with updated history
-    this.setState({
+    this.setState(prevState => ({
       hero: {
-        xPos: (window.innerWidth / 2) / 2,
-        yPos: st.hero.yPos,
-        width: (window.innerWidth / 10) / 8,
-        height: (window.innerWidth / 10) / 8,
-        trailLength: 10,
+        ...prevState.hero,
         history: heroHistory,
       },
-    });
+    }));
   }
 
   
   // Draw Hero
-  drawHero(context, xPos, yPos, boxWidth, boxHeight) {
+  drawHero(context, xPos, yPos, heroRadius) {
     const sth = this.state.hero;
-
-    // Draw Hero
-    context.fillStyle = `rgb(255,165,0)`;
-    //context.fillRect(xPos, yPos, boxWidth, boxHeight);
-    context.beginPath();
-    context.arc(xPos,yPos,boxWidth,0,2*Math.PI);
-    context.fill();
-
-    this.storeHeroHistory(xPos, yPos);
 
     // Draw Hero Trail
     for (let i = 0; i < sth.history.length; i++) {
-      context.fillStyle = `rgba(255,165,0,${i/sth.history.length})`;
+      context.fillStyle = `rgba(255, 0, 0, ${i/sth.history.length})`;
       context.beginPath();
-      context.arc(sth.history[i].x,sth.history[i].y,(boxWidth - i/sth.history.length),0,2*Math.PI);
+      context.arc(sth.history[i].x, (sth.history[i].y -= this.state.gameSpeed), heroRadius - (0.25 * i), 0, 2 * Math.PI);
       context.fill();
     }
+
+    // Draw Hero
+    context.fillStyle = `rgb(255,165,0)`;
+    context.beginPath();
+    context.arc(xPos, yPos, heroRadius, 0, 2 * Math.PI);
+    context.fill();
+
+    this.storeHeroHistory(xPos, yPos);
 
     console.log(sth.history);
 
@@ -360,16 +354,13 @@ export default class Game extends Component {
       }
 
       // Set the state direction based on the above logic
-      this.setState({
+      this.setState(prevState => ({
         hero: {
+          ...prevState.hero,
           xPos: x,
           yPos: y,
-          width: (window.innerWidth / 10) / 8,
-          height: (window.innerWidth / 10) / 8,
-          trailLength: 50,
-          history: st.hero.history,
-        }      
-      }, () => {
+        }
+      }), () => {
         // Update hero
         this.triggerHero();
       });
@@ -392,13 +383,12 @@ export default class Game extends Component {
       offsetY -= st.gameSpeed;
 
       // Set the state direction based on the above logic
-      this.setState({
+      this.setState(prevState => ({
           box: {
-            width: (window.innerWidth / 2) / 10,
-            height: (window.innerWidth / 2) / 10,
+            ...prevState.box,
             yPos: offsetY,
           },
-        }, () => {
+        }), () => {
         // Update boxes
         this.triggerGame();
       });
