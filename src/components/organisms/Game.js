@@ -106,9 +106,11 @@ const initialState = {
 const GameInfoTL = styled.p`
   position: absolute;
   top: 30px;
-  left: 30px;
+  left: 30px;#FF6A00FF
 `;
 
+
+console.log(initialState.block.history[10].x);
 
 // MY GAME COMPONENT
 export default class Game extends Component {
@@ -137,12 +139,15 @@ export default class Game extends Component {
   // Refs and the dom in React 16+ // https://reactjs.org/docs/refs-and-the-dom.html?
   getCanvas() {
     const context = this.canvas.getContext('2d');
+    const st = this.state;
+
     this.setState({
       context: context,
     }, () => {
       // Draw on canvas after we've got the ref to it
       this.triggerHero();
       this.triggerGame();
+      this.getInitialPath(st.context, BLOCKMATRIX, st.block.width, st.block.height);
     });
   }
 
@@ -302,7 +307,6 @@ export default class Game extends Component {
       context.fillStyle = `rgba(0, 0, 0, ${i/sth.history.length})`;
       context.beginPath();
       context.arc(sth.history[i].x, (sth.history[i].y -= this.state.gameSpeed), heroRadius - (0.15 * i), 0, 2 * Math.PI);
-      context.lineWidth = 0;
       context.fill();
     }
 
@@ -310,27 +314,50 @@ export default class Game extends Component {
     context.fillStyle = `#4E1887`;
     context.beginPath();
     context.arc(xPos, yPos, heroRadius, 0, 2 * Math.PI);
-    context.lineWidth = 0;
     context.fill();
 
     this.storeHeroHistory(xPos, yPos);
   }
 
-   // Store Block PATH History
-  storeBlockPathHistory(index, xPos, yPos) {
+  // Get the initial hero path (only triggers on page load or resize)
+  getInitialPath(context, matrix, blockWidth, blockHeight) {
     const st = this.state;
     let blockHistory = st.block.history;
-    
-    // Update position data at [index]
-    blockHistory[index].x = xPos;
-    blockHistory[index].y = yPos;
+    let index = 0;
+    let next = index + 1;
+    let curBlockX;
+    let curBlockY;
 
-    // Just do this only a few times
-    // setInterval(() => {  
-    //   console.log(`BlockHistory: ${blockHistory}`);
-    // }, 1000);
+    console.log(`Context is: ${context}`);
+
+    // Rows in Matrix
+    matrix.forEach((row, y) => {
+       // Cols in row
+       row.forEach((value, x) => {
+        // If there's a value, plot the path
+        if(value === 0) {
+
+          curBlockX = blockWidth * x, // xPos
+          curBlockY = blockWidth * y, // yPos
+      
+          // Update position data at [index]
+          blockHistory[index].x = curBlockX;
+          blockHistory[index].y = curBlockY;
+
+          context.beginPath();
+          context.moveTo(blockHistory[index].x, blockHistory[index].y);
+          context.lineTo(blockHistory[next].x, blockHistory[next].y);    
+          context.stroke();
+
+          console.log('test loop');
+
+          index += 1; // increment
+        }
+      });
+    });
+
   }
-  
+
   // Draw Blocks (over and over)
   drawBlocks(context, matrix, blockWidth, blockHeight, yPos) {
     let pathIndex = -1;
@@ -356,7 +383,7 @@ export default class Game extends Component {
           context.strokeStyle = `rgba(255, 255, 255, 1)`;
           context.stroke();
 
-        // Else draw hero path
+        // Else draw hero block path
         } else {
           context.fillStyle = `rgba(255, 0, 0, ${0.25 * y / 10})`;
           context.fillRect(
@@ -365,27 +392,6 @@ export default class Game extends Component {
             blockWidth,
             blockHeight
           );
-
-          // This could probably be improved?
-          if (this.state.inGame && pathIndex < this.state.gamePathBlocks) {
-            pathIndex += 1;
-            this.storeBlockPathHistory(pathIndex, blockWidth * x, blockHeight * y + yPos);
-            //console.log(`Called from drawBlocks #${pathIndex}`);
-          } else {
-            pathIndex = -1;
-          }
-
-          // // NOTE: you probably don't need to setState each time?
-          // // Set with updated history
-          // this.setState(prevState => ({
-          //   block: {
-          //     ...prevState.block,
-          //     history: blockHistory,
-          //   },
-          // }), () => {
-          //   console.log(`Block Path Positions: ${st.block.history}`);
-          // });
-
         }
       });
     });
@@ -461,7 +467,7 @@ export default class Game extends Component {
           },
         }), () => {
         // Update Blocks
-        this.triggerGame();
+        this.triggerGame();        
       });
       
     }
