@@ -292,7 +292,6 @@ export default class Game extends Component {
       },
     }));
   }
-
   
   // Draw Hero (over and over)
   drawHero(context, xPos, yPos, heroRadius) {
@@ -317,7 +316,6 @@ export default class Game extends Component {
     this.storeHeroHistory(xPos, yPos);
   }
 
-
    // Store Block PATH History
   storeBlockPathHistory(index, xPos, yPos) {
     const st = this.state;
@@ -327,10 +325,11 @@ export default class Game extends Component {
     blockHistory[index].x = xPos;
     blockHistory[index].y = yPos;
 
-    //console.log(blockHistory);
+    // Just do this only a few times
+    // setInterval(() => {  
+    //   console.log(`BlockHistory: ${blockHistory}`);
+    // }, 1000);
   }
-
-
   
   // Draw Blocks (over and over)
   drawBlocks(context, matrix, blockWidth, blockHeight, yPos) {
@@ -356,6 +355,7 @@ export default class Game extends Component {
           context.lineWidth = 5;
           context.strokeStyle = `rgba(255, 255, 255, 1)`;
           context.stroke();
+
         // Else draw hero path
         } else {
           context.fillStyle = `rgba(255, 0, 0, ${0.25 * y / 10})`;
@@ -367,9 +367,10 @@ export default class Game extends Component {
           );
 
           // This could probably be improved?
-          if (pathIndex < this.state.gamePathBlocks) {
+          if (this.state.inGame && pathIndex < this.state.gamePathBlocks) {
             pathIndex += 1;
             this.storeBlockPathHistory(pathIndex, blockWidth * x, blockHeight * y + yPos);
+            //console.log(`Called from drawBlocks #${pathIndex}`);
           } else {
             pathIndex = -1;
           }
