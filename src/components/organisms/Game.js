@@ -147,7 +147,7 @@ export default class Game extends Component {
       // Draw on canvas after we've got the ref to it
       this.triggerHero();
       this.triggerGame();
-      this.getInitialPath(st.context, BLOCKMATRIX, st.block.width, st.block.height);
+      this.getInitialPath(context, BLOCKMATRIX, st.block.width, st.block.height);
     });
   }
 
@@ -330,6 +330,11 @@ export default class Game extends Component {
 
     console.log(`Context is: ${context}`);
 
+    // Start Line drawing
+    context.beginPath();
+    context.strokeStyle = "black";
+    context.lineWidth = 10;
+
     // Rows in Matrix
     matrix.forEach((row, y) => {
        // Cols in row
@@ -343,18 +348,18 @@ export default class Game extends Component {
           // Update position data at [index]
           blockHistory[index].x = curBlockX;
           blockHistory[index].y = curBlockY;
-
-          context.beginPath();
+          
           context.moveTo(blockHistory[index].x, blockHistory[index].y);
           context.lineTo(blockHistory[next].x, blockHistory[next].y);    
-          context.stroke();
-
-          console.log('test loop');
+          
+          console.log(`${index}X:${blockHistory[index].x} | ${index}Y:${blockHistory[index].y} `);
 
           index += 1; // increment
         }
       });
     });
+
+    context.stroke();
 
   }
 
