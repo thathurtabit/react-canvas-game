@@ -114,6 +114,15 @@ export default class App extends Component {
           <Column>
             <Game gameRunning={this.state.gameRunning} handleKeyPress={this.handleKeyPress} />
           </Column>
+          <Column>            
+            <Intro>
+              Time: 0,<br />
+              Score: 0,<br />
+              Game running is: {this.state.gameRunning ? 'True' : 'False'} <br />
+              Game FPS: <br />
+              Hero FPS: <br />
+            </Intro>
+          </Column>
         </SiteWrap>
       </Fade>
     );
