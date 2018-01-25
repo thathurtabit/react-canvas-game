@@ -53,10 +53,14 @@ const BLOCKMATRIX = [
 ];
 
 
-const COUNTPATHBLOCKS = () => {
+const COUNTBLOCKS = (type) => {
+  let pathRowCount = 0;
   let pathBlockCount = 0;
 
+  // rows
   BLOCKMATRIX.forEach((row, y) => {
+    pathRowCount += 1;
+
     // Cols in row
     row.forEach((value, x) => {
       // If there's a value, draw the BG blocks
@@ -66,8 +70,14 @@ const COUNTPATHBLOCKS = () => {
     });
   });
 
-  return pathBlockCount;
+  if(type === 'rows') {
+    return pathRowCount;
+  } else {
+    return pathBlockCount;
+  }
 }
+
+console.log(`Row Count: ${COUNTBLOCKS('rows')}`);
 
 // Set my initial state
 const initialState = {
@@ -81,9 +91,10 @@ const initialState = {
     height: window.innerHeight,
     ratio: window.devicePixelRatio || 1,
   },
-  gameRows: 10,
+  gameRows: COUNTBLOCKS('rows'),
+  gameCols: 10,
   gameSpeed: 1,
-  gamePathBlocks: COUNTPATHBLOCKS(),
+  gamePathBlocks: COUNTBLOCKS('pathBlocks'),
   block: {
     width: (window.innerWidth / 3) / 10,
     height: (window.innerWidth / 3) / 10,
@@ -263,6 +274,20 @@ export default class Game extends Component {
     });
   }
 
+  checkCollision() {
+    console.log('Checking for collisions');
+
+    const st = this.state;
+
+    /*
+
+      If hero current position is inside of BLOCK ROW 
+      then target the path blocks on that row
+
+    */
+  }
+
+
   // Store Hero History
   storeHeroHistory(xPos, yPos) {
     const st = this.state;
@@ -286,7 +311,11 @@ export default class Game extends Component {
         ...prevState.hero,
         history: heroHistory,
       },
-    }));
+    }), ()=> {
+
+      // Check for collisions based on current state data
+      this.checkCollision();
+    });
   }
   
   // Draw Hero (over and over)
@@ -371,12 +400,15 @@ export default class Game extends Component {
             blockHeight
           );
 
-          this.storeBlockPathHistory(blockWidth * x, blockHeight * y + yPos);
+          // Store the CENTER of the path block
+          this.storeBlockPathHistory((blockWidth * x) + blockWidth, (blockHeight * y + yPos) + blockWidth);
         }
 
       });
     });
   }
+
+
 
   // Update hero (no throttling)
   updateHero() {
