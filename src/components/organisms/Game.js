@@ -77,8 +77,6 @@ const COUNTBLOCKS = (type) => {
   }
 }
 
-console.log(`Row Count: ${COUNTBLOCKS('rows')}`);
-
 // Set my initial state
 const initialState = {
   inGame: false,
@@ -94,6 +92,7 @@ const initialState = {
   gameRows: COUNTBLOCKS('rows'),
   gameCols: 10,
   gameSpeed: 1,
+  gameHeight: '', // set in componentDidMount
   gamePathBlocks: COUNTBLOCKS('pathBlocks'),
   block: {
     width: (window.innerWidth / 3) / 10,
@@ -145,6 +144,7 @@ export default class Game extends Component {
 
     this.setState({
       context: context,
+
     }, () => {
       // Draw on canvas after we've got the ref to it
       this.triggerHero();
@@ -174,9 +174,11 @@ export default class Game extends Component {
       inGame: this.props.gameRunning,
       // Make sure hero moves twice as fast as the game
       heroSpeed: this.state.gameSpeed * 2,
+      gameHeight: this.state.gameRows * this.state.block.height,
     }, () =>{
       // GAME ANIMATION
       this.startAnimation();
+      console.log(`Game Height: ${this.state.gameHeight} | Row Count: ${this.state.gameRows}`);
     }); 
 
   }
@@ -265,6 +267,7 @@ export default class Game extends Component {
         height: (window.innerWidth / 10) / 8,
       },
       centerPos: st.screen.width / 2,
+      gameHeight: this.state.gameRows * this.state.block.height,
     }), () => {
 
       // Start updates / redrawing
@@ -287,12 +290,10 @@ export default class Game extends Component {
     */
   }
 
-
   // Store Hero History
   storeHeroHistory(xPos, yPos) {
     const st = this.state;
     let heroHistory = st.hero.history;
-
 
     // push an item
     heroHistory.push({
