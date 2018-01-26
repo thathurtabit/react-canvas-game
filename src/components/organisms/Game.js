@@ -77,6 +77,19 @@ const COUNTBLOCKS = (type) => {
   }
 }
 
+const GAMEROWARRAY = () => {
+  let gameRowArray = [];
+  let blockHeight = (window.innerWidth / 3) / 10;
+  
+  for (let i = 0; i < COUNTBLOCKS('rows'); i++) {
+    let rowY = blockHeight * i;
+    gameRowArray.push({y: rowY});
+  }
+
+  return gameRowArray;
+}
+
+
 // Set my initial state
 const initialState = {
   inGame: false,
@@ -90,6 +103,7 @@ const initialState = {
     ratio: window.devicePixelRatio || 1,
   },
   gameRows: COUNTBLOCKS('rows'),
+  gameRowsArray: GAMEROWARRAY(),
   gameCols: 10,
   gameSpeed: 1,
   gameHeight: '', // set in componentDidMount
@@ -98,7 +112,7 @@ const initialState = {
     width: (window.innerWidth / 3) / 10,
     height: (window.innerWidth / 3) / 10,
     yPos: 0,
-    history: [],
+    history: Array(COUNTBLOCKS('pathBlocks')).fill({x: 0, y: 0}),
   },
   hero: {
     xPos: (window.innerWidth / 3) / 2,
@@ -112,7 +126,6 @@ const initialState = {
   context: null,
   direction: 'down',
 };
-
 
 // MY GAME COMPONENT
 export default class Game extends Component {
@@ -277,12 +290,28 @@ export default class Game extends Component {
     });
   }
 
-  checkCollision() {
-    console.log('Checking for collisions');
 
+  // Loop
+  checkCollision() {
+    
 
     const st = this.state;
-    console.log(st.blockHeight);
+    const heroPosX = st.hero.xPos;
+    const heroPosY = st.hero.yPos;
+
+    if (st.direction === 'up' || st.direction === 'down') {
+      
+      console.log(`collision direction: ${st.direction}`);
+
+      for (let i = 0; i < st.gameRowsArray.length; i++) {
+
+        console.log(`Hero y: ${st.hero.yPos} | Path y: ${st.gameRowsArray[i].y}`);
+
+        if (heroPosY === st.gameRowsArray[i].y) {
+          console.error(`It's a hit.`);
+        }
+      }
+    }
 
     /*
 
@@ -344,20 +373,12 @@ export default class Game extends Component {
   }
 
   // Store Block Path History
-  storeBlockPathHistory(xPos, yPos) {
+  storeBlockPathData(index, xPos, yPos) {
     const st = this.state;
     let blockHistory = st.block.history;
-
-    // push an item
-    blockHistory.push({
-      x: xPos,
-      y: yPos,
-    });
-
-    // get rid of first item each time
-    if (st.block.history.length > st.gamePathBlocks) {
-      blockHistory.shift();
-    }
+  
+    blockHistory[index].x = xPos,
+    blockHistory[index].y = yPos,
 
     // Set with updated history
     this.setState(prevState => ({
@@ -371,6 +392,7 @@ export default class Game extends Component {
 
   // Draw Blocks (over and over)
   drawBlocks(context, matrix, blockWidth, blockHeight, yPos) {
+    let blockPathIndex = 0;
 
     // Rows in Matrix
     matrix.forEach((row, y) => {
@@ -395,6 +417,9 @@ export default class Game extends Component {
 
         // Else draw hero block path
         } else {
+          
+          //console.log(`path block x: ${x} | path block y: ${y} `);
+
           context.fillStyle = `rgba(255, 0, 0, ${0.25 * y / 10})`;
           context.fillRect(
             blockWidth * x, // xPos
@@ -402,9 +427,12 @@ export default class Game extends Component {
             blockWidth,
             blockHeight
           );
-
+         
           // Store the CENTER of the path block
-          this.storeBlockPathHistory((blockWidth * x) + blockWidth, (blockHeight * y + yPos) + blockWidth);
+          this.storeBlockPathData(blockPathIndex, (blockWidth * x) + blockWidth, (blockHeight * y + yPos) + blockWidth);
+
+          // Increment blockPathIndex after each send to storeBlockPathData
+          blockPathIndex += 1;
         }
 
       });
