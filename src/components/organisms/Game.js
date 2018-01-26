@@ -280,7 +280,9 @@ export default class Game extends Component {
   checkCollision() {
     console.log('Checking for collisions');
 
+
     const st = this.state;
+    console.log(st.blockHeight);
 
     /*
 
